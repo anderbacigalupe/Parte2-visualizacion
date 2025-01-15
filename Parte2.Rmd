@@ -1,0 +1,300 @@
+---
+title: "Parte II Visualizacion"
+author: "Ander Bacigalupe Gutierrez"
+date: "2025-01-16"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(ggplot2)
+library(plotly)
+library(reshape2)
+library(dplyr)
+```
+
+```{r load data}
+music =read.csv("data.csv", stringsAsFactors = T)
+dim(music)
+```
+
+```{r}
+head(music)
+```
+
+
+Vamos a eliminar las columnas id y release_date, ya que el id de una cancion no nos proporciona información valiosa para ningun tipo de análisis y release_date esta incompleta, por lo que con la variable Year que nos indica el año de la canción seria mas que suficiente.
+```{r}
+# Eliminar las columnas 'release_date' e 'id'
+music <- music[, !(colnames(music) %in% c("release_date", "id"))]
+```
+
+```{r}
+# Comprobar si hay filas duplicadas
+duplicados <- music[duplicated(music), ]
+
+# Verificar el número de filas duplicadas
+n_duplicados <- nrow(duplicados)
+print(paste("Número de filas duplicadas:", n_duplicados))
+
+```
+
+```{r}
+# Eliminar filas duplicadas
+music <- music[!duplicated(music), ]
+
+# Modificar directamente la columna duration_ms
+music <- music %>%
+  mutate(duration_ms = duration_ms / 1000)
+```
+
+Correlaciones entre diferentes variables de los datos:
+
+```{r}
+# Seleccionar solo las variables cuantitativas
+music_numeric <- music %>% select_if(is.numeric)
+
+# Calcular la matriz de correlación
+cor_matrix <- cor(music_numeric, use = "complete.obs", method = "pearson")
+
+# Transformar la matriz de correlación a formato largo (long format)
+cor_data <- melt(cor_matrix)
+
+# Crear el heatmap con ggplot2
+heatmap_plot <- ggplot(cor_data, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 3) + # Agregar números
+  scale_fill_gradient2(low = "white", mid = "lightgreen", high = "darkgreen", 
+                       midpoint = 0, limits = c(-1, 1), name = "Correlación") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(
+    title = "Matriz de Correlación",
+    x = "Variables",
+    y = "Variables"
+  )
+
+# Convertir el gráfico a interactivo con plotly
+heatmap_interactive <- ggplotly(heatmap_plot)
+
+# Mostrar el gráfico interactivo
+heatmap_interactive
+```
+
+Evolución de diferentes variables a lo largo del tiempo
+
+```{r}
+# 1. Evolución de Acousticness
+music_yearly <- music %>%
+  group_by(year) %>%
+  summarise(acousticness_avg = mean(acousticness, na.rm = TRUE))
+
+yearly_plot <- ggplot(music_yearly, aes(x = year, y = acousticness_avg)) +
+  geom_line(color = "green", size = 1) + # Línea verde
+  geom_point(color = "darkgreen", size = 2) + # Puntos
+  theme_minimal() +
+  labs(
+    title = "Evolución de Acousticness a lo Largo de los Años",
+    x = "Año",
+    y = "Promedio de Acousticness"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_line(color = "gray", size = 0.2)
+  )
+
+# Convertir a interactivo
+interactive_yearly_plot <- ggplotly(yearly_plot)
+interactive_yearly_plot
+
+# 2. Evolución de Duration_ms
+music_duration <- music %>%
+  group_by(year) %>%
+  summarise(duration_avg = mean(duration_ms, na.rm = TRUE))
+
+duration_plot <- ggplot(music_duration, aes(x = year, y = duration_avg)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(color = "darkblue", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Evolución de Duration_ms a lo Largo de los Años",
+    x = "Año",
+    y = "Promedio de Duration_ms"
+  )
+
+# Convertir a interactivo
+interactive_duration_plot <- ggplotly(duration_plot)
+interactive_duration_plot
+
+# 3. Evolución de Danceability
+music_danceability <- music %>%
+  group_by(year) %>%
+  summarise(danceability_avg = mean(danceability, na.rm = TRUE))
+
+danceability_plot <- ggplot(music_danceability, aes(x = year, y = danceability_avg)) +
+  geom_line(color = "orange", size = 1) +
+  geom_point(color = "darkorange", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Evolución de Danceability a lo Largo de los Años",
+    x = "Año",
+    y = "Promedio de Danceability"
+  )
+
+# Convertir a interactivo
+interactive_danceability_plot <- ggplotly(danceability_plot)
+interactive_danceability_plot
+
+# 4. Evolución de Energy
+music_energy <- music %>%
+  group_by(year) %>%
+  summarise(energy_avg = mean(energy, na.rm = TRUE))
+
+energy_plot <- ggplot(music_energy, aes(x = year, y = energy_avg)) +
+  geom_line(color = "red", size = 1) +
+  geom_point(color = "darkred", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Evolución de Energy a lo Largo de los Años",
+    x = "Año",
+    y = "Promedio de Energy"
+  )
+
+# Convertir a interactivo
+interactive_energy_plot <- ggplotly(energy_plot)
+interactive_energy_plot
+
+# 5. Evolución de Loudness
+music_loudness <- music %>%
+  group_by(year) %>%
+  summarise(loudness_avg = mean(loudness, na.rm = TRUE))
+
+loudness_plot <- ggplot(music_loudness, aes(x = year, y = loudness_avg)) +
+  geom_line(color = "purple", size = 1) +
+  geom_point(color = "purple4", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Evolución de Loudness a lo Largo de los Años",
+    x = "Año",
+    y = "Promedio de Loudness"
+  )
+
+# Convertir a interactivo
+interactive_loudness_plot <- ggplotly(loudness_plot)
+interactive_loudness_plot
+```
+
+```{r}
+explicit_trend <- music %>%
+  group_by(year, explicit) %>%
+  summarise(count = n(), .groups = "drop")
+
+# Convertir explicit a factor para que ggplot lo trate como categórico
+explicit_trend$explicit <- factor(explicit_trend$explicit, levels = c(0, 1), labels = c("Non-Explicit", "Explicit"))
+
+# Crear un gráfico de barras apiladas con ggplot
+ggplot_bar <- ggplot(explicit_trend, aes(x = year, y = count, fill = explicit)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("Non-Explicit" = "#191414", "Explicit" = "#1db954")) +
+  theme_minimal() +
+  labs(
+    title = "Explicit vs. Non-Explicit",
+    x = "Year",
+    y = "Count",
+    fill = "Explicit"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, size = 16)
+  )
+
+# Convertir el gráfico a interactivo con plotly
+ggplotly(ggplot_bar)
+```
+
+```{r}
+# Calcular el porcentaje dentro de cada año
+explicit_trend <- music %>%
+  group_by(year, explicit) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(year) %>%
+  mutate(percentage = count / sum(count) * 100) %>% # Calcular el porcentaje
+  ungroup()
+
+# Convertir explicit a factor
+explicit_trend$explicit <- factor(explicit_trend$explicit, levels = c(0, 1), labels = c("Non-Explicit", "Explicit"))
+
+# Crear un gráfico de barras apiladas con porcentaje
+ggplot_bar <- ggplot(explicit_trend, aes(x = year, y = percentage, fill = explicit)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("Non-Explicit" = "#191414", "Explicit" = "#1db954")) +
+  theme_minimal() +
+  labs(
+    title = "Explicit vs. Non-Explicit (Porcentaje)",
+    x = "Year",
+    y = "Percentage",
+    fill = "Explicit"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, size = 16)
+  )
+
+# Convertir el gráfico a interactivo con plotly
+ggplotly(ggplot_bar)
+
+```
+
+
+```{r}
+# Crear una nueva columna para clasificar las canciones por duración
+music <- music %>%
+  mutate(duration_category = ifelse(duration_ms <= 210, "≤ 210 segundos", "> 210 segundos"))
+
+# Crear el boxplot con ggplot
+boxplot_duration <- ggplot(music, aes(x = duration_category, y = popularity, fill = duration_category)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
+  scale_fill_manual(values = c("≤ 210 segundos" = "#1DB954", "> 210 segundos" = "#191414")) +
+  theme_minimal() +
+  labs(
+    title = "Comparación de Popularidad por Duración de Canción",
+    x = "Duración de la Canción",
+    y = "Popularidad",
+    fill = "Duración"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  )
+
+# Convertir el gráfico a interactivo con plotly
+boxplot_interactive <- ggplotly(boxplot_duration)
+
+# Mostrar el gráfico interactivo
+boxplot_interactive
+```
+
+
+Vamos a realizar un test estadistico para comprobar si existen diferencias significativas en la popularidad media entre los dos grupos.
+
+```{r}
+# Filtrar los datos
+grupo_1 <- subset(music, duration_ms > 210)  # canciones con duración > 210 segundos
+grupo_2 <- subset(music, duration_ms <= 210)  # canciones con duración <= 210 segundos
+
+# Realizar la prueba t
+resultado <- t.test(grupo_1$popularity, grupo_2$popularity)
+
+# Mostrar los resultados
+print(resultado)
+```
+
+Dado el valor p extremadamente bajo, podemos concluir que hay una diferencia estadísticamente significativa entre las popularidades de las canciones más largas y las más cortas.
